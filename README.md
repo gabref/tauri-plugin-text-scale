@@ -26,7 +26,7 @@ a CSS custom property.
 | Windows  | Planned: `UISettings.TextScaleFactor`. Returns `1` until then  |
 | Linux    | `1`. A later version can read the GTK text scale               |
 | macOS    | `1`. macOS has no public API for its text size                 |
-| Android  | Planned: `Configuration.fontScale`. Returns `1` until then     |
+| Android  | `Configuration.fontScale`                                      |
 | iOS      | Planned: `UIFontMetrics` for body text. Returns `1` until then |
 
 ## Architecture
@@ -80,6 +80,16 @@ Run the Rust tests only:
 ```bash
 cargo test --workspace --lib
 ```
+
+Run the Kotlin tests for the Android text scale logic (requires JDK 17 and the Android
+SDK):
+
+```bash
+cd android && ./gradlew :lib:test
+```
+
+The Kotlin tests cover the logic in `android/lib`, which does not depend on the Tauri
+Android API, so the tests run without an emulator or a Tauri app build.
 
 ### Example app
 
