@@ -154,6 +154,43 @@ the app's screen and builds a new one. An activity that lists the setting in
      position. The plugin emits no event. The new page reads the new scale with
      `getTextScale()`.
 
+#### 2. Turn off the WebView text zoom in every WebView
+
+Add this override to `MainActivity`, in
+`src-tauri/gen/android/app/src/main/java/<your package path>/MainActivity.kt`:
+
+```kotlin
+import android.webkit.WebView
+
+class MainActivity : TauriActivity() {
+   override fun onWebViewCreate(webView: WebView) {
+      // Turn off the WebView text zoom. The app applies the text scale itself.
+      webView.settings.textZoom = 100
+   }
+}
+```
+
+If `MainActivity` already overrides `onWebViewCreate`, add the `textZoom` line to it.
+
+Why: the Android WebView has its own text zoom. Android sets it from the font size, and
+it multiplies all text in the page by the font scale. An app that also applies the scale
+from this plugin then scales its text twice, for example 1.3 × 1.3 at a font scale of
+1.3. CSS cannot turn the text zoom off, because `text-size-adjust` has no effect on it.
+`textZoom = 100` turns it off.
+
+The plugin sets `textZoom = 100` on the first WebView, but it cannot reach a later one:
+
+   * Tauri gives a plugin only the first WebView, through `load`.
+   * Android makes a new WebView each time it recreates the activity. This happens after
+     a change to a setting that `configChanges` does not list, such as Bold text.
+   * Wry, the Tauri library that makes the WebViews, calls `onWebViewCreate` in the app's
+     activity for every WebView. So the app's activity is the only place that reaches
+     each one.
+
+Without this override, the text has the right size until Android recreates the
+activity. After that, all text is scaled twice until the user closes and opens the app
+again.
+
 ## Usage
 
 ### Prerequisites

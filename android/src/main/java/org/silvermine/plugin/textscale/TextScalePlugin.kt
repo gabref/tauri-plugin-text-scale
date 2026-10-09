@@ -2,6 +2,7 @@ package org.silvermine.plugin.textscale
 
 import android.app.Activity
 import android.content.res.Configuration
+import android.webkit.WebView
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -25,6 +26,17 @@ class TextScalePlugin(private val activity: Activity) : Plugin(activity) {
    private val lock = Any()
    private var channel: Channel? = null
    private var changes: TextScaleChanges? = null
+
+   // The WebView sets its text zoom from the font scale, so it multiplies all text by
+   // the scale on its own. A text zoom of 100 turns that off, so that the app applies the
+   // scale once, where it chooses.
+   //
+   // Tauri calls `load` only with the first WebView. When Android recreates the activity,
+   // the new WebView needs the same setting from `onWebViewCreate` in the app's activity.
+   // The README shows that app code.
+   override fun load(webView: WebView) {
+      webView.settings.textZoom = 100
+   }
 
    @Command
    fun getTextScale(invoke: Invoke) {
