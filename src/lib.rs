@@ -94,7 +94,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
          let platform = desktop::init();
 
          #[cfg(target_os = "android")]
-         let platform = mobile::init(_api)?;
+         let platform = mobile::init(app, _api)?;
 
          app.manage(TextScale::<R>(platform));
 

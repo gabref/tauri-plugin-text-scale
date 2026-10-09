@@ -29,6 +29,10 @@ a CSS custom property.
 | Android  | `Configuration.fontScale`                                      |
 | iOS      | Planned: `UIFontMetrics` for body text. Returns `1` until then |
 
+> [!IMPORTANT]
+> An Android app must change its own Android project for the plugin to work fully. See
+> [Android app setup](#android-app-setup).
+
 ## Architecture
 
 The plugin is one crate. Unlike `tauri-plugin-connectivity`, it has no
@@ -119,6 +123,36 @@ the same commit as the Rust crate:
 ```sh
 npm install github:silvermine/tauri-plugin-text-scale#<sha>
 ```
+
+### Android app setup
+
+An Android app needs the changes below in its generated Android project, under
+`src-tauri/gen/android`. The plugin cannot make them, because they are in files that the
+app owns. If you run `tauri android init` again, make sure that the changes are still
+there.
+
+#### 1. Keep the activity when the font size changes
+
+In `src-tauri/gen/android/app/src/main/AndroidManifest.xml`, add `fontScale` to the
+`android:configChanges` attribute of the main activity:
+
+```xml
+<activity
+   android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|fontScale"
+   ...>
+```
+
+If the app has more activities that show a WebView, add `fontScale` to each of them.
+
+Why: when a phone setting changes, Android recreates the activity. That is, it destroys
+the app's screen and builds a new one. An activity that lists the setting in
+`configChanges` is kept instead. The Tauri template does not list `fontScale`.
+
+   * With `fontScale` listed, the app keeps running as it is. Android reports the new font
+     size, and the plugin emits `tauri-plugin-text-scale:changed`.
+   * Without it, the page loads again and loses its state, for example the scroll
+     position. The plugin emits no event. The new page reads the new scale with
+     `getTextScale()`.
 
 ## Usage
 
