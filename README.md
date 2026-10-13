@@ -110,6 +110,12 @@ See [Android text scale manual testing](docs/android-text-scale-manual-testing.m
 the device setup and the scenarios: the first read, a change while the app runs,
 rotation, the WebView text zoom and activity recreation.
 
+### Manual iOS testing
+
+See [iOS text scale manual testing](docs/ios-text-scale-manual-testing.md) for the
+simulator setup and the scenarios: the first read, a change while the app runs, every
+text size, a change in the background and the WebView text size.
+
 ### Example app
 
 The [example app](examples/tauri-app/README.md) shows the current scale and lists each
