@@ -26,8 +26,12 @@ a CSS custom property.
 | Windows  | Planned: `UISettings.TextScaleFactor`. Returns `1` until then  |
 | Linux    | `1`. A later version can read the GTK text scale               |
 | macOS    | `1`. macOS has no public API for its text size                 |
-| Android  | Planned: `Configuration.fontScale`. Returns `1` until then     |
+| Android  | `Configuration.fontScale`                                      |
 | iOS      | Planned: `UIFontMetrics` for body text. Returns `1` until then |
+
+> [!IMPORTANT]
+> An Android app must change its own Android project for the plugin to work fully. See
+> [Android app setup](#android-app-setup).
 
 ## Architecture
 
@@ -81,6 +85,22 @@ Run the Rust tests only:
 cargo test --workspace --lib
 ```
 
+Run the Kotlin tests for the Android text scale logic (requires JDK 17 and the Android
+SDK):
+
+```bash
+cd android && ./gradlew :lib:test
+```
+
+The Kotlin tests cover the logic in `android/lib`, which does not depend on the Tauri
+Android API, so the tests run without an emulator or a Tauri app build.
+
+### Manual Android testing
+
+See [Android text scale manual testing](docs/android-text-scale-manual-testing.md) for
+the device setup and the scenarios: the first read, a change while the app runs,
+rotation, the WebView text zoom and activity recreation.
+
 ### Example app
 
 The [example app](examples/tauri-app/README.md) shows the current scale and lists each
@@ -109,6 +129,73 @@ the same commit as the Rust crate:
 ```sh
 npm install github:silvermine/tauri-plugin-text-scale#<sha>
 ```
+
+### Android app setup
+
+An Android app needs the changes below in its generated Android project, under
+`src-tauri/gen/android`. The plugin cannot make them, because they are in files that the
+app owns. If you run `tauri android init` again, make sure that the changes are still
+there.
+
+#### 1. Keep the activity when the font size changes
+
+In `src-tauri/gen/android/app/src/main/AndroidManifest.xml`, add `fontScale` to the
+`android:configChanges` attribute of the main activity:
+
+```xml
+<activity
+   android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|fontScale"
+   ...>
+```
+
+If the app has more activities that show a WebView, add `fontScale` to each of them.
+
+Why: when a phone setting changes, Android recreates the activity. That is, it destroys
+the app's screen and builds a new one. An activity that lists the setting in
+`configChanges` is kept instead. The Tauri template does not list `fontScale`.
+
+   * With `fontScale` listed, the app keeps running as it is. Android reports the new font
+     size, and the plugin emits `tauri-plugin-text-scale:changed`.
+   * Without it, the page loads again and loses its state, for example the scroll
+     position. The plugin emits no event. The new page reads the new scale with
+     `getTextScale()`.
+
+#### 2. Turn off the WebView text zoom in every WebView
+
+Add this override to `MainActivity`, in
+`src-tauri/gen/android/app/src/main/java/<your package path>/MainActivity.kt`:
+
+```kotlin
+import android.webkit.WebView
+
+class MainActivity : TauriActivity() {
+   override fun onWebViewCreate(webView: WebView) {
+      // Turn off the WebView text zoom. The app applies the text scale itself.
+      webView.settings.textZoom = 100
+   }
+}
+```
+
+If `MainActivity` already overrides `onWebViewCreate`, add the `textZoom` line to it.
+
+Why: the Android WebView has its own text zoom. Android sets it from the font size, and
+it multiplies all text in the page by the font scale. An app that also applies the scale
+from this plugin then scales its text twice, for example 1.3 × 1.3 at a font scale of
+1.3. CSS cannot turn the text zoom off, because `text-size-adjust` has no effect on it.
+`textZoom = 100` turns it off.
+
+The plugin sets `textZoom = 100` on the first WebView, but it cannot reach a later one:
+
+   * Tauri gives a plugin only the first WebView, through `load`.
+   * Android makes a new WebView each time it recreates the activity. This happens after
+     a change to a setting that `configChanges` does not list, such as Bold text.
+   * Wry, the Tauri library that makes the WebViews, calls `onWebViewCreate` in the app's
+     activity for every WebView. So the app's activity is the only place that reaches
+     each one.
+
+Without this override, the text has the right size until Android recreates the
+activity. After that, all text is scaled twice until the user closes and opens the app
+again.
 
 ## Usage
 

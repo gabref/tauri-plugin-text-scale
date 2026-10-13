@@ -21,8 +21,16 @@
 //! ```
 
 mod commands;
+#[cfg(not(target_os = "android"))]
 mod desktop;
 mod error;
+#[cfg(target_os = "android")]
+mod mobile;
+
+#[cfg(not(target_os = "android"))]
+use desktop as platform;
+#[cfg(target_os = "android")]
+use mobile as platform;
 
 pub use error::{Error, Result};
 
@@ -35,28 +43,34 @@ use tracing::debug;
 pub const TEXT_SCALE_CHANGED_EVENT: &str = "tauri-plugin-text-scale:changed";
 
 /// Access to the operating system text scale.
-pub struct TextScale;
+pub struct TextScale<R: Runtime>(platform::TextScale<R>);
 
-impl TextScale {
+impl<R: Runtime> TextScale<R> {
    /// Returns the current text scale, where `1.0` is the platform's default text size.
    ///
    /// # Errors
    ///
    /// Returns [`Error::ReadFailed`] when the platform fails to report its text size.
    pub fn scale(&self) -> Result<f64> {
-      Ok(desktop::text_scale())
+      self.0.scale()
+   }
+
+   /// Returns the current text scale without blocking an async worker thread while the
+   /// platform replies.
+   pub(crate) async fn scale_async(&self) -> Result<f64> {
+      self.0.scale_async().await
    }
 }
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the
 /// text scale.
 pub trait TextScaleExt<R: Runtime> {
-   fn text_scale(&self) -> &TextScale;
+   fn text_scale(&self) -> &TextScale<R>;
 }
 
 impl<R: Runtime, T: Manager<R>> TextScaleExt<R> for T {
-   fn text_scale(&self) -> &TextScale {
-      self.state::<TextScale>().inner()
+   fn text_scale(&self) -> &TextScale<R> {
+      self.state::<TextScale<R>>().inner()
    }
 }
 
@@ -75,7 +89,15 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
       .invoke_handler(tauri::generate_handler![commands::get_text_scale])
       .setup(|app, _api| {
          debug!("registering the text scale plugin state");
-         app.manage(TextScale);
+
+         #[cfg(not(target_os = "android"))]
+         let platform = desktop::init();
+
+         #[cfg(target_os = "android")]
+         let platform = mobile::init(app, _api)?;
+
+         app.manage(TextScale::<R>(platform));
+
          Ok(())
       })
       .build()
