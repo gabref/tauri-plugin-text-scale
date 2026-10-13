@@ -1,4 +1,4 @@
-//! Calls the native Android `TextScalePlugin` through a `PluginHandle`.
+//! Calls the native `TextScalePlugin` on Android and iOS through a `PluginHandle`.
 
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,10 @@ use tracing::{debug, warn};
 
 use crate::TEXT_SCALE_CHANGED_EVENT;
 
+#[cfg(target_os = "android")]
 const PLUGIN_IDENTIFIER: &str = "org.silvermine.plugin.textscale";
+#[cfg(target_os = "ios")]
+tauri::ios_plugin_binding!(init_plugin_text_scale);
 
 const COMMAND_GET_TEXT_SCALE: &str = "getTextScale";
 const COMMAND_WATCH: &str = "watch";
@@ -35,7 +38,10 @@ pub(crate) fn init<R: Runtime, C: DeserializeOwned>(
    app: &AppHandle<R>,
    api: PluginApi<R, C>,
 ) -> std::result::Result<TextScale<R>, PluginInvokeError> {
+   #[cfg(target_os = "android")]
    let handle = api.register_android_plugin(PLUGIN_IDENTIFIER, "TextScalePlugin")?;
+   #[cfg(target_os = "ios")]
+   let handle = api.register_ios_plugin(init_plugin_text_scale)?;
    let text_scale = TextScale(handle);
 
    // Without the watch, `get_text_scale` still works, so the app can start.
@@ -61,8 +67,8 @@ impl<R: Runtime> TextScale<R> {
       Ok(result.value)
    }
 
-   /// Returns the current text scale without blocking an async worker thread while
-   /// Kotlin replies.
+   /// Returns the current text scale without blocking an async worker thread while the
+   /// native plugin replies.
    pub(crate) async fn scale_async(&self) -> crate::Result<f64> {
       let result: MobileTextScale = self
          .0

@@ -1,8 +1,8 @@
 //! The fallback for platforms that do not read a text size yet.
 //!
 //! macOS has no public API for its text size setting, so it always uses this fallback.
-//! Linux uses it until a module reads the GTK text scale. Windows and iOS use it until
-//! each platform has its own module.
+//! Linux uses it until a module reads the GTK text scale. Windows uses it until it has its
+//! own module.
 
 use std::marker::PhantomData;
 

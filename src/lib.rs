@@ -21,15 +21,15 @@
 //! ```
 
 mod commands;
-#[cfg(not(target_os = "android"))]
+#[cfg(desktop)]
 mod desktop;
 mod error;
-#[cfg(target_os = "android")]
+#[cfg(mobile)]
 mod mobile;
 
-#[cfg(not(target_os = "android"))]
+#[cfg(desktop)]
 use desktop as platform;
-#[cfg(target_os = "android")]
+#[cfg(mobile)]
 use mobile as platform;
 
 pub use error::{Error, Result};
@@ -50,7 +50,9 @@ impl<R: Runtime> TextScale<R> {
    ///
    /// # Errors
    ///
-   /// Returns [`Error::ReadFailed`] when the platform fails to report its text size.
+   /// Returns [`Error::ReadFailed`] when the platform fails to report its text size. On
+   /// iOS, it also returns that error before the app creates its first WebView, because
+   /// the plugin reads the text size when Tauri gives it a WebView.
    pub fn scale(&self) -> Result<f64> {
       self.0.scale()
    }
@@ -90,10 +92,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
       .setup(|app, _api| {
          debug!("registering the text scale plugin state");
 
-         #[cfg(not(target_os = "android"))]
+         #[cfg(desktop)]
          let platform = desktop::init();
 
-         #[cfg(target_os = "android")]
+         #[cfg(mobile)]
          let platform = mobile::init(app, _api)?;
 
          app.manage(TextScale::<R>(platform));
