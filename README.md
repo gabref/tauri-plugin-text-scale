@@ -21,13 +21,13 @@ a CSS custom property.
    * Build and run on every Tauri target. A platform that has no text size, or that the
      plugin does not support yet, returns `1` and never emits the event.
 
-| Platform | Source of the scale                                            |
-| -------- | -------------------------------------------------------------- |
-| Windows  | Planned: `UISettings.TextScaleFactor`. Returns `1` until then  |
-| Linux    | `1`. A later version can read the GTK text scale               |
-| macOS    | `1`. macOS has no public API for its text size                 |
-| Android  | `Configuration.fontScale`                                      |
-| iOS      | Planned: `UIFontMetrics` for body text. Returns `1` until then |
+| Platform | Source of the scale                                                     |
+| -------- | ----------------------------------------------------------------------- |
+| Windows  | Planned: `UISettings.TextScaleFactor`. Returns `1` until then           |
+| Linux    | `1`. A later version can read the GTK text scale                        |
+| macOS    | `1`. macOS has no public API for its text size                          |
+| Android  | `Configuration.fontScale`                                               |
+| iOS      | `UIFont.preferredFont`: the body font size, divided by its default size |
 
 > [!IMPORTANT]
 > An Android app must change its own Android project for the plugin to work fully. See
@@ -95,11 +95,26 @@ cd android && ./gradlew :lib:test
 The Kotlin tests cover the logic in `android/lib`, which does not depend on the Tauri
 Android API, so the tests run without an emulator or a Tauri app build.
 
+Run the Swift tests for the iOS text scale logic (requires Xcode):
+
+```bash
+swift test --package-path ios/TextScaleCore
+```
+
+The Swift tests cover the logic in `ios/TextScaleCore`, which does not depend on UIKit or
+the Tauri iOS API, so the tests run on macOS without a simulator.
+
 ### Manual Android testing
 
 See [Android text scale manual testing](docs/android-text-scale-manual-testing.md) for
 the device setup and the scenarios: the first read, a change while the app runs,
 rotation, the WebView text zoom and activity recreation.
+
+### Manual iOS testing
+
+See [iOS text scale manual testing](docs/ios-text-scale-manual-testing.md) for the
+simulator setup and the scenarios: the first read, a change while the app runs, every
+text size, a change in the background and the WebView text size.
 
 ### Example app
 
@@ -196,6 +211,24 @@ The plugin sets `textZoom = 100` on the first WebView, but it cannot reach a lat
 Without this override, the text has the right size until Android recreates the
 activity. After that, all text is scaled twice until the user closes and opens the app
 again.
+
+### iOS app setup
+
+The plugin needs iOS 15 or later. Tauri's default minimum is iOS 14, so set the minimum
+in `src-tauri/tauri.conf.json` if the app does not set iOS 15 or later already:
+
+```json
+{
+   "bundle": {
+      "iOS": {
+         "minimumSystemVersion": "15.0"
+      }
+   }
+}
+```
+
+The app needs no other change. The iOS WebView does not scale text by itself, so the app
+applies the scale once, where it chooses.
 
 ## Usage
 
@@ -315,6 +348,11 @@ fn log_text_scale<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
    }
 }
 ```
+
+On iOS, the read fails before the app creates its first WebView, because the plugin
+reads the text size when Tauri gives it a WebView. Tauri creates the windows from
+`tauri.conf.json` before it runs the app's `setup`, so a read in `setup` works in an app
+that has such a window.
 
 ## Development Standards
 

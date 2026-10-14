@@ -14,6 +14,9 @@ module.exports = {
       './src-tauri/**',
       'examples/tauri-app/README.md',
       'examples/**/src-tauri/**',
+
+      // Cargo output. An iOS build puts Swift package checkouts with READMEs there.
+      'target/**',
    ],
 
 };
