@@ -38,4 +38,8 @@ if (tauriApiDir.exists()) {
     project(':tauri-android').projectDir = tauriApiDir
 }
 
-include ':lib'
+// A Tauri app includes only the plugin module, not `:lib`. Pass
+// `-PembeddedHostPluginBuild` to build the module the same way.
+if (!gradle.startParameter.projectProperties.containsKey('embeddedHostPluginBuild')) {
+    include ':lib'
+}
