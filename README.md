@@ -23,7 +23,7 @@ a CSS custom property.
 
 | Platform | Source of the scale                                                     |
 | -------- | ----------------------------------------------------------------------- |
-| Windows  | Planned: `UISettings.TextScaleFactor`. Returns `1` until then           |
+| Windows  | `UISettings.TextScaleFactor`                                            |
 | Linux    | `1`. A later version can read the GTK text scale                        |
 | macOS    | `1`. macOS has no public API for its text size                          |
 | Android  | `Configuration.fontScale`                                               |
