@@ -116,6 +116,12 @@ See [iOS text scale manual testing](docs/ios-text-scale-manual-testing.md) for t
 simulator setup and the scenarios: the first read, a change while the app runs, every
 text size, a change in the background and the WebView text size.
 
+### Manual Windows testing
+
+See [Windows text scale manual testing](docs/windows-text-scale-manual-testing.md) for
+the setup and the scenarios: the first read, a change while the app runs, the smallest and
+largest text size, the WebView text size and a full-trust MSIX package.
+
 ### Example app
 
 The [example app](examples/tauri-app/README.md) shows the current scale and lists each
