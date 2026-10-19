@@ -102,6 +102,6 @@ class TextScalePlugin: Plugin {
 }
 
 @_cdecl("init_plugin_text_scale")
-func initPlugin() -> Plugin {
+public func initPlugin() -> Plugin {
    return TextScalePlugin()
 }
