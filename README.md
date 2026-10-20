@@ -2,8 +2,8 @@
 
 [![CI][ci-badge]][ci-url]
 
-Reads the operating system text size setting in Tauri 2.x apps and reports changes to
-it.
+Reads the operating system text size setting in Tauri 2.12 (or later) apps and reports
+changes to it.
 
 The plugin reports the text size as a scale. The scale is `1` at the platform's default
 text size. A larger text size gives a scale above `1`, and a smaller text size gives a
@@ -151,6 +151,22 @@ An Android app needs the changes below in its generated Android project, under
 `src-tauri/gen/android`. The plugin cannot make them, because they are in files that the
 app owns. If you run `tauri android init` again, make sure that the changes are still
 there.
+
+#### Android host requirements
+
+The plugin's Android module sets `compileSdk` to 37. An app that builds it needs the
+Android toolchain from Tauri **2.12** (or later) `tauri android init`:
+
+   * **Android Gradle Plugin (AGP) 9.1.1 or later.** API 37 needs AGP 9.1.1. Tauri 2.12
+     uses AGP 9.3.1.
+   * **Gradle 9.3.1 or later.** AGP 9.1 needs Gradle 9.3.1. Tauri 2.12 uses Gradle 9.6.1.
+   * **Kotlin Gradle Plugin 1.9 or 2.x.** The module uses `compilerOptions`, not
+     `kotlinOptions`.
+
+An Android project from an older Tauri template uses AGP 8, and it cannot build the
+module. A new `tauri` crate does not change that project. Upgrade AGP and Gradle in
+`src-tauri/gen/android`, or run `tauri android init` again with the Tauri 2.12 CLI and
+then make the two changes below.
 
 #### 1. Keep the activity when the font size changes
 
